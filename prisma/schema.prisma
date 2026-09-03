@@ -1,0 +1,24 @@
+// Fonte da verdade do modelo de dados. O provider e o PostgreSQL 15 que sobe
+// pelo docker-compose. O schema equivalente de SQLite, usado pela suite de
+// testes, e derivado deste arquivo por scripts/gen-sqlite-schema.mjs.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/pg"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  title       String   @db.VarChar(120)
+  description String
+  price       Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("products")
+}

@@ -1,0 +1,25 @@
+# Banco de desenvolvimento da API. Usuario, senha, nome do banco e porta vem do
+# .env, e os dados ficam em volume nomeado para sobreviver a um down.
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: catalogo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-catalogo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-catalogo}
+      POSTGRES_DB: ${POSTGRES_DB:-catalogo}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - catalogo_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-catalogo} -d ${POSTGRES_DB:-catalogo}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  catalogo_pgdata:

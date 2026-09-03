@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+*.log
+
+# Artefatos gerados: o schema de teste sai do schema principal por script,
+# e os clients do Prisma saem dos schemas.
+prisma/schema.sqlite.prisma
+src/generated/
+*.db
+*.db-journal
+coverage/
