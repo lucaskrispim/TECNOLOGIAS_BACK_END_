@@ -23,9 +23,12 @@
   },
   "dependencies": {
     "@prisma/client": "6.19.3",
-    "express": "5.1.0"
+    "cors": "^2.8.6",
+    "express": "5.1.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "5.0.0",
     "@types/node": "22.10.5",
     "@types/supertest": "6.0.2",

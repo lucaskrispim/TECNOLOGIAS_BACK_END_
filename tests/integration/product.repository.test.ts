@@ -19,6 +19,13 @@ describe('create', () => {
     expect(criado.updatedAt).toBeInstanceOf(Date)
   })
 
+  it('guarda a imagem informada', async () => {
+    const criado = await repo.create(productInput({ imageUrl: '/img/teclado.jpg' }))
+
+    expect(criado.imageUrl).toBe('/img/teclado.jpg')
+    expect((await repo.findById(criado.id))?.imageUrl).toBe('/img/teclado.jpg')
+  })
+
   it('guarda o preco como decimal de duas casas', async () => {
     const criado = await repo.create(productInput({ price: '349.90' }))
     const lido = await repo.findById(criado.id)
@@ -69,6 +76,17 @@ describe('update', () => {
     expect(alterado?.price.toFixed(2)).toBe('10.00')
     expect(alterado!.updatedAt.getTime()).toBeGreaterThan(criado.updatedAt.getTime())
     expect(alterado!.createdAt.getTime()).toBe(criado.createdAt.getTime())
+  })
+
+  it('aceita alteracao parcial e preserva as colunas ausentes do patch', async () => {
+    const criado = await repo.create(productInput())
+
+    const alterado = await repo.update(criado.id, { title: 'So o titulo' })
+
+    expect(alterado?.title).toBe('So o titulo')
+    expect(alterado?.description).toBe(criado.description)
+    expect(alterado?.imageUrl).toBe(criado.imageUrl)
+    expect(alterado?.price.toFixed(2)).toBe(criado.price.toFixed(2))
   })
 
   it('devolve null para id inexistente, em vez de estourar erro do Prisma', async () => {

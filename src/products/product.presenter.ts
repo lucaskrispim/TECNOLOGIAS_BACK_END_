@@ -4,6 +4,7 @@ export interface ProductDto {
   id: number
   title: string
   description: string
+  imageUrl: string
   price: string
   createdAt: string
   updatedAt: string
@@ -22,6 +23,7 @@ export function toApi(product: Product): ProductDto {
     id: product.id,
     title: product.title,
     description: product.description,
+    imageUrl: product.imageUrl,
     price: product.price.toFixed(2),
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),

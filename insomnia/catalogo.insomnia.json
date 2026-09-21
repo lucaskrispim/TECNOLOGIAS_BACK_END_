@@ -1,8 +1,8 @@
 {
   "_type": "export",
   "__export_format": 4,
-  "__export_date": "2026-09-03T14:40:00.000Z",
-  "__export_source": "insomnia.desktop.app:v10.0.0:tarefa1-back-end",
+  "__export_date": "2026-09-21T14:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v10.0.0:tarefa2-back-end",
   "resources": [
     {
       "_id": "wrk_catalogo",
@@ -10,8 +10,8 @@
       "parentId": null,
       "modified": 1767225600000,
       "created": 1767225600000,
-      "name": "Catalogo API, tarefa 1 back-end",
-      "description": "Requisicoes da API de catalogo. Ajuste base_url no ambiente se a porta nao for 3000.",
+      "name": "Catalogo API, tarefa 2 back-end",
+      "description": "CRUD da API de catalogo, tarefa 2. Cada requisicao traz na descricao o status esperado. Ordem sugerida de uso: liste, crie com o POST, aponte id_valido e id_removivel para ids reais e siga para PUT e DELETE.",
       "scope": "collection"
     },
     {
@@ -23,12 +23,14 @@
       "name": "Base Environment",
       "data": {
         "base_url": "http://localhost:3000",
-        "id_valido": "1"
+        "id_valido": "1",
+        "id_removivel": "1"
       },
       "dataPropertyOrder": {
         "&": [
           "base_url",
-          "id_valido"
+          "id_valido",
+          "id_removivel"
         ]
       },
       "color": null,
@@ -42,7 +44,7 @@
       "modified": 1767225600000,
       "created": 1767225600000,
       "name": "GET / status da API",
-      "description": "Deve responder 200 com {\"status\":\"ok\"}.",
+      "description": "200. Responde {\"status\":\"ok\"}, sem tocar no banco.",
       "method": "GET",
       "url": "{{ _.base_url }}/",
       "body": {},
@@ -64,10 +66,10 @@
       "parentId": "wrk_catalogo",
       "modified": 1767225600000,
       "created": 1767225600000,
-      "name": "GET /products lista",
-      "description": "Deve responder 200 com os produtos do seed, do mais recente para o mais antigo.",
+      "name": "GET /api/products lista",
+      "description": "200. Lista os produtos do seed, do mais recente para o mais antigo.",
       "method": "GET",
-      "url": "{{ _.base_url }}/products",
+      "url": "{{ _.base_url }}/api/products",
       "body": {},
       "parameters": [],
       "headers": [],
@@ -82,15 +84,15 @@
       "settingFollowRedirects": "global"
     },
     {
-      "_id": "req_show",
+      "_id": "req_show_ok",
       "_type": "request",
       "parentId": "wrk_catalogo",
       "modified": 1767225600000,
       "created": 1767225600000,
-      "name": "GET /products/:id existente",
-      "description": "Deve responder 200 com o produto. O id vem do seed.",
+      "name": "GET /api/products/:id existente",
+      "description": "200. Use em id_valido um id que apareca na listagem.",
       "method": "GET",
-      "url": "{{ _.base_url }}/products/{{ _.id_valido }}",
+      "url": "{{ _.base_url }}/api/products/{{ _.id_valido }}",
       "body": {},
       "parameters": [],
       "headers": [],
@@ -110,10 +112,10 @@
       "parentId": "wrk_catalogo",
       "modified": 1767225600000,
       "created": 1767225600000,
-      "name": "GET /products/:id inexistente",
-      "description": "Deve responder 404 com {\"error\":\"not_found\"}.",
+      "name": "GET /api/products/:id inexistente",
+      "description": "404. Corpo {\"error\":\"not_found\", ...}.",
       "method": "GET",
-      "url": "{{ _.base_url }}/products/999999",
+      "url": "{{ _.base_url }}/api/products/999999",
       "body": {},
       "parameters": [],
       "headers": [],
@@ -133,10 +135,10 @@
       "parentId": "wrk_catalogo",
       "modified": 1767225600000,
       "created": 1767225600000,
-      "name": "GET /products/:id fora do formato",
-      "description": "Deve responder 400 com {\"error\":\"bad_request\"}, e nao 404 nem 500.",
+      "name": "GET /api/products/:id fora do formato",
+      "description": "400. Id que nao e inteiro positivo e entrada invalida, nao recurso ausente.",
       "method": "GET",
-      "url": "{{ _.base_url }}/products/abc",
+      "url": "{{ _.base_url }}/api/products/abc",
       "body": {},
       "parameters": [],
       "headers": [],
@@ -151,18 +153,18 @@
       "settingFollowRedirects": "global"
     },
     {
-      "_id": "req_store",
+      "_id": "req_store_ok",
       "_type": "request",
       "parentId": "wrk_catalogo",
       "modified": 1767225600000,
       "created": 1767225600000,
-      "name": "POST /products cria",
-      "description": "Deve responder 201 com o produto criado e o cabecalho Location.",
+      "name": "POST /api/products cria",
+      "description": "201. Devolve o registro criado e o cabecalho Location com a URL dele.",
       "method": "POST",
-      "url": "{{ _.base_url }}/products",
+      "url": "{{ _.base_url }}/api/products",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"title\": \"Webcam Full HD 1080p\",\n  \"description\": \"Webcam com foco automatico, microfone estereo e conexao USB-A.\",\n  \"price\": \"319.90\"\n}"
+        "text": "{\n  \"title\": \"Webcam Full HD 1080p\",\n  \"description\": \"Webcam com microfone embutido, foco automatico e clipe para monitor.\",\n  \"price\": \"259.90\",\n  \"imageUrl\": \"https://picsum.photos/seed/webcam/640/480\"\n}"
       },
       "parameters": [],
       "headers": [
@@ -187,13 +189,13 @@
       "parentId": "wrk_catalogo",
       "modified": 1767225600000,
       "created": 1767225600000,
-      "name": "POST /products corpo invalido",
-      "description": "Deve responder 400 com a lista de campos invalidos em details.",
+      "name": "POST /api/products corpo invalido",
+      "description": "400. O Zod acusa os quatro campos de uma vez em details: title abaixo de 3, description abaixo de 10, imageUrl vazio e price negativo.",
       "method": "POST",
-      "url": "{{ _.base_url }}/products",
+      "url": "{{ _.base_url }}/api/products",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"title\": \"\",\n  \"price\": \"abc\"\n}"
+        "text": "{\n  \"title\": \"ab\",\n  \"description\": \"curta\",\n  \"price\": -5,\n  \"imageUrl\": \"\"\n}"
       },
       "parameters": [],
       "headers": [
@@ -213,18 +215,18 @@
       "settingFollowRedirects": "global"
     },
     {
-      "_id": "req_update",
+      "_id": "req_update_parcial",
       "_type": "request",
       "parentId": "wrk_catalogo",
       "modified": 1767225600000,
       "created": 1767225600000,
-      "name": "PUT /products/:id atualiza",
-      "description": "Deve responder 200 com o produto atualizado.",
+      "name": "PUT /api/products/:id parcial",
+      "description": "200. Manda so o preco; titulo, descricao e imagem ficam como estao.",
       "method": "PUT",
-      "url": "{{ _.base_url }}/products/{{ _.id_valido }}",
+      "url": "{{ _.base_url }}/api/products/{{ _.id_valido }}",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"title\": \"Teclado mecanico ABNT2 tenkeyless\",\n  \"description\": \"Descricao atualizada pelo PUT.\",\n  \"price\": \"379.90\"\n}"
+        "text": "{\n  \"price\": \"199.90\"\n}"
       },
       "parameters": [],
       "headers": [
@@ -244,20 +246,204 @@
       "settingFollowRedirects": "global"
     },
     {
-      "_id": "req_destroy",
+      "_id": "req_update_completo",
       "_type": "request",
       "parentId": "wrk_catalogo",
       "modified": 1767225600000,
       "created": 1767225600000,
-      "name": "DELETE /products/:id remove",
-      "description": "Com um id que exista devolve 204 sem corpo. Repetindo a chamada, devolve 404.",
+      "name": "PUT /api/products/:id completo",
+      "description": "200. O mesmo schema em versao parcial tambem aceita o payload inteiro.",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/products/{{ _.id_valido }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Webcam Full HD 1080p\",\n  \"description\": \"Webcam com microfone embutido, foco automatico e clipe para monitor.\",\n  \"price\": \"259.90\",\n  \"imageUrl\": \"https://picsum.photos/seed/webcam/640/480\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -200,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_update_400",
+      "_type": "request",
+      "parentId": "wrk_catalogo",
+      "modified": 1767225600000,
+      "created": 1767225600000,
+      "name": "PUT /api/products/:id preco negativo",
+      "description": "400. Nada e gravado: a validacao roda antes do acesso ao banco.",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/products/{{ _.id_valido }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"price\": -10\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -100,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_update_404",
+      "_type": "request",
+      "parentId": "wrk_catalogo",
+      "modified": 1767225600000,
+      "created": 1767225600000,
+      "name": "PUT /api/products/:id inexistente",
+      "description": "404. E o P2025 do Prisma traduzido pela camada de dados.",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/products/999999",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Produto que nao existe\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 0,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_destroy_ok",
+      "_type": "request",
+      "parentId": "wrk_catalogo",
+      "modified": 1767225600000,
+      "created": 1767225600000,
+      "name": "DELETE /api/products/:id remove",
+      "description": "204. Sem corpo na resposta. Aponte id_removivel para um registro descartavel, por exemplo o criado pelo POST.",
       "method": "DELETE",
-      "url": "{{ _.base_url }}/products/999999",
+      "url": "{{ _.base_url }}/api/products/{{ _.id_removivel }}",
       "body": {},
       "parameters": [],
       "headers": [],
       "authentication": {},
-      "metaSortKey": -200,
+      "metaSortKey": 100,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_destroy_404",
+      "_type": "request",
+      "parentId": "wrk_catalogo",
+      "modified": 1767225600000,
+      "created": 1767225600000,
+      "name": "DELETE /api/products/:id inexistente",
+      "description": "404. Repetir a remocao do mesmo id cai aqui.",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/products/999999",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": 200,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_preflight_ok",
+      "_type": "request",
+      "parentId": "wrk_catalogo",
+      "modified": 1767225600000,
+      "created": 1767225600000,
+      "name": "OPTIONS /api/products preflight liberado",
+      "description": "204 com Access-Control-Allow-Origin: http://localhost:5173. E a pergunta que o navegador faz antes de um PUT vindo do front.",
+      "method": "OPTIONS",
+      "url": "{{ _.base_url }}/api/products/{{ _.id_valido }}",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Origin",
+          "value": "http://localhost:5173"
+        },
+        {
+          "name": "Access-Control-Request-Method",
+          "value": "PUT"
+        },
+        {
+          "name": "Access-Control-Request-Headers",
+          "value": "content-type"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 300,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_preflight_bloqueado",
+      "_type": "request",
+      "parentId": "wrk_catalogo",
+      "modified": 1767225600000,
+      "created": 1767225600000,
+      "name": "OPTIONS /api/products preflight de origem estranha",
+      "description": "404 e, o que importa, sem o cabecalho Access-Control-Allow-Origin: o navegador barra a leitura da resposta.",
+      "method": "OPTIONS",
+      "url": "{{ _.base_url }}/api/products/{{ _.id_valido }}",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Origin",
+          "value": "http://evil.example.com"
+        },
+        {
+          "name": "Access-Control-Request-Method",
+          "value": "PUT"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 400,
       "isPrivate": false,
       "settingStoreCookies": true,
       "settingSendCookies": true,

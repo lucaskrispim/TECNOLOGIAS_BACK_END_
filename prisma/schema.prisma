@@ -16,6 +16,7 @@ model Product {
   id          Int      @id @default(autoincrement())
   title       String   @db.VarChar(120)
   description String
+  imageUrl    String   @db.VarChar(2048)
   price       Decimal  @db.Decimal(10, 2)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

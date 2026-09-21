@@ -2,7 +2,7 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { PRODUTOS_INICIAIS, seedProducts } from '../../src/products/product.seed'
 import { createProductRepository } from '../../src/products/product.repository'
-import { validateProductInput } from '../../src/products/product.validation'
+import { createProductSchema } from '../../src/products/product.schema'
 import { disconnectDb, resetDb, testDb } from '../support/db'
 
 const repo = createProductRepository(testDb)
@@ -15,9 +15,15 @@ describe('dados do seed', () => {
     expect(PRODUTOS_INICIAIS.length).toBeGreaterThanOrEqual(5)
   })
 
-  it('todo registro passa pela mesma validacao da API', () => {
+  it('todo registro passa pelo mesmo schema da API', () => {
     for (const produto of PRODUTOS_INICIAIS) {
-      expect(validateProductInput(produto).ok, produto.title).toBe(true)
+      expect(createProductSchema.safeParse(produto).success, produto.title).toBe(true)
+    }
+  })
+
+  it('todo registro tem imagem, que o front usa no card', () => {
+    for (const produto of PRODUTOS_INICIAIS) {
+      expect(produto.imageUrl.length, produto.title).toBeGreaterThan(0)
     }
   })
 

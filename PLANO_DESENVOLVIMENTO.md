@@ -4,6 +4,11 @@ Tarefa 1 de Tecnologias Back-End. Enunciado em `Tarefa 1 - Back-End.md`.
 Abordagem: teste primeiro (vermelho, verde, refatora), SQLite como banco de
 desenvolvimento e de teste, PostgreSQL 15 em Docker como alvo de entrega.
 
+A tarefa 2 continua neste mesmo documento, a partir da seção
+[Tarefa 2, CRUD completo com Zod e CORS](#tarefa-2-crud-completo-com-zod-e-cors).
+O plano vira diário: cada parte tem suas fases, seus riscos e o estado da
+execução ao fim.
+
 ## Por que dois bancos
 
 O enunciado torna obrigatório o PostgreSQL 15 em Docker Compose com volume,
@@ -363,3 +368,203 @@ Docker instalado por snap.
 
 Falta a fase 10, que depende de você: repositório público no GitHub e o vídeo de
 2 a 5 minutos.
+
+## Tarefa 2, CRUD completo com Zod e CORS
+
+Enunciado em `Tarefa 2 - Back-end.md`. A base continua a mesma: Node, Express 5,
+Prisma sobre PostgreSQL 15 em container, suíte em SQLite, teste antes da
+implementação. O que entra é validação de runtime com Zod, CORS restrito ao
+front, prefixo `/api`, atualização parcial no `PUT` e o campo `imageUrl` no
+modelo.
+
+### O que muda, e o que fica como está
+
+| Item | Tarefa 1 | Tarefa 2 |
+| --- | --- | --- |
+| validação | módulo escrito à mão, resultado discriminado | schemas Zod, `parse` no controller |
+| rotas | `/products` | `/api/products`, sem alias para o caminho antigo |
+| `PUT` | substituição, exige os três campos | atualização parcial com `.partial()` |
+| modelo | `title`, `description`, `price` | mais `imageUrl`, obrigatório |
+| CORS | ausente | lista fixa vinda de `ALLOWED_ORIGIN` |
+| tratamento de erro | `AppError` traduzido no middleware | mais `ZodError` para 400 e `P2025` para 404 |
+
+Ficam intactos a arquitetura em camadas, a injeção de dependência no
+`createApp`, o presenter que uniformiza `Decimal` e datas, os dois schemas de
+Prisma derivados por script, e o contrato de erro `{ error, message, details? }`,
+que o front já consegue consumir sem tratar formato por status.
+
+### Decisões da tarefa 2
+
+Zod entra e a validação manual sai. Na tarefa 1 escrevi o validador à mão porque
+o enunciado proibia framework adicional; o enunciado novo exige Zod nominalmente,
+então a proibição caiu e manter as duas camadas só criaria duas fontes de
+verdade para a mesma regra. Os casos de borda que o módulo antigo cobria migram
+para o teste do schema, não se perdem: preço negativo, mais de duas casas, teto
+de `numeric(10,2)`, campo desconhecido descartado.
+
+O prefixo `/api` substitui o caminho antigo em vez de conviver com ele. Duas
+rotas para o mesmo recurso é dívida imediata: o Insomnia fica com requisições
+duplicadas e o próximo leitor não sabe qual é a boa.
+
+`imageUrl` é obrigatório na criação, como o enunciado pede, e obrigatório também
+na coluna. Coluna anulável com schema exigente é o pior dos dois mundos: o banco
+aceita registro sem imagem e o front quebra ao renderizar o card. Como a tabela
+já tinha registros, a migration adiciona a coluna com valor padrão vazio e retira
+o padrão em seguida, e o `npm run seed` repovoa com as imagens.
+
+O `PUT` parcial recusa corpo vazio. `.partial()` sozinho aceitaria `{}` e
+responderia 200 sem alterar nada, o que engana o cliente; um `.refine` cobra pelo
+menos um campo conhecido e devolve 400.
+
+O `P2025` do Prisma é tratado em dois lugares, de propósito. O repositório já o
+traduz em ausência de registro, que é onde a informação faz sentido, e o
+middleware repete a tradução como rede de segurança para o caso de ele escapar
+de uma consulta nova. Código diferente de `P2025` continua subindo para virar
+500, em vez de um 404 enganoso.
+
+CORS por lista fixa, conferida por igualdade, sem curinga e sem refletir a origem
+que chamou. Origem de fora da lista não vira 403: a requisição é atendida e a
+resposta sai sem `Access-Control-Allow-Origin`, que é o mecanismo real do
+navegador. Fingir bloqueio no servidor daria falsa sensação de segurança, já que
+curl e Insomnia passam de qualquer jeito.
+
+### Fases
+
+#### Fase 11, schemas em Zod
+
+Teste primeiro, em `tests/unit/product.schema.test.ts`, cobrindo cada regra do
+enunciado e os limites exatos: `title` de 3 a 120 caracteres contados depois de
+aparar as pontas, `description` a partir de 10, `imageUrl` não vazia, `price`
+maior que zero com no máximo duas casas e teto de `99999999.99`. Mais o contrato
+de saída: campo desconhecido descartado, todos os campos inválidos acusados de
+uma vez, corpo que não é objeto recusado. E o schema parcial: um campo só,
+mesmas regras por campo, corpo vazio recusado.
+
+Implementar `src/products/product.schema.ts` com `createProductSchema` e
+`updateProductSchema`. O preço sai do schema como string canônica de duas casas,
+igual à tarefa 1, para que o repositório receba sempre a mesma forma e a camada
+siga sem dependência do ORM.
+
+Apagar `product.validation.ts` e o teste dele.
+
+Pronto quando os casos do schema passam e nada mais importa o módulo antigo.
+
+#### Fase 12, imagem no modelo
+
+Acrescentar `imageUrl String @db.VarChar(2048)` ao `Product`, atualizar as
+factories de teste e os seis registros do seed, e criar a migration com
+`prisma migrate dev --create-only`, editando o SQL para o padrão temporário.
+Aplicar com `prisma migrate deploy`, que não oferece reset e portanto não
+arrisca os dados de desenvolvimento.
+
+Pronto quando a suíte passa, o seed grava as imagens e a coluna aparece no
+Prisma Studio.
+
+#### Fase 13, prefixo e atualização parcial
+
+Testes de rota reescritos para `/api/products`, mais um caso afirmando que o
+caminho antigo responde 404. No `PUT`, o caso central é enviar só um campo e
+confirmar, lendo o registro depois, que os demais ficaram como estavam.
+
+Implementar a montagem do router em `/api/products`, o `Location` apontando para
+o caminho novo, e `service.update` recebendo patch parcial no lugar do antigo
+`replace`.
+
+Pronto quando os testes de leitura e de escrita passam.
+
+#### Fase 14, CORS
+
+`tests/http/cors.test.ts` cobre o que o servidor envia: origem da lista recebe
+`Access-Control-Allow-Origin`, origem de fora não recebe, preflight de `PUT`
+responde 204 anunciando os verbos do CRUD e o `Content-Type`, a resposta marca
+`Vary: Origin`, e chamada sem `Origin` continua atendida. A leitura da variável
+de ambiente é testada à parte, com lista separada por vírgula e com o padrão que
+entra quando ela falta.
+
+Implementar `src/http/cors.ts` e registrar o middleware antes das rotas e do
+parser de JSON. As origens entram no `createApp` por parâmetro, com o ambiente
+como padrão, para o teste não depender de variável global.
+
+Pronto quando os casos de CORS passam e o `npm run dev` imprime as origens
+liberadas ao subir.
+
+#### Fase 15, erros diferenciados
+
+`tests/http/errors.test.ts` ganha três casos: `ZodError` que chega ao middleware
+vira 400 com `details`, erro com código `P2025` vira 404, e código diferente
+dele continua virando 500.
+
+Implementar a tradução em `error-handler.ts`, e trocar `safeParse` por `parse`
+nos handlers, o que tira do controller a decisão de status.
+
+Pronto quando os três casos passam e nenhum anterior quebra.
+
+#### Fase 16, Insomnia, documentação e entrega
+
+Workspace do Insomnia refeito com o caminho feliz e os erros de cada rota, mais
+os dois preflights, cada requisição registrando na descrição o status esperado.
+README com as seções de Zod e de CORS, esta última justificando origens, métodos
+e cabeçalhos, como o enunciado cobra. `TESTES.md` com os números novos.
+
+Pronto quando um clone limpo sobe seguindo só o README e o Insomnia importa sem
+ajuste.
+
+### Riscos e mitigação
+
+| Risco | Mitigação |
+| --- | --- |
+| Zod 4 mudou a API de mensagem de erro em relação ao 3 | mensagem por regra, conferida em teste que afirma o texto, e não só o campo |
+| coluna obrigatória em tabela povoada quebra a migration | padrão temporário no SQL e `migrate deploy` em vez de `migrate dev`, que poderia oferecer reset |
+| `.partial()` aceitaria corpo vazio e responderia 200 à toa | `.refine` cobrando ao menos um campo, com caso de teste próprio |
+| migrar o prefixo quebra o que a tarefa 1 entregou | caso de teste afirmando 404 no caminho antigo, e Insomnia refeito na mesma passada |
+| CORS liberado demais por curinga acidental | lista conferida por igualdade, sem `origin: true`, com teste de origem estranha |
+
+### Checklist de entrega
+
+- [ ] `GET`, `POST`, `PUT` e `DELETE` em `/api/products` com 200, 201, 204, 400 e 404
+- [ ] Zod na criação e no `.partial()` da atualização
+- [ ] `ZodError` em 400, `P2025` em 404 e o resto em 500
+- [ ] `cors` restrito a `http://localhost:5173` ou ao que estiver em `ALLOWED_ORIGIN`
+- [ ] `.env.example` com `DATABASE_URL`, `PORT` e `ALLOWED_ORIGIN`
+- [ ] migration da coluna `imageUrl` versionada e aplicada
+- [ ] seed com seis registros, todos com imagem
+- [ ] workspace do Insomnia com os cenários de erro e os status esperados anotados
+- [ ] README com a política de CORS justificada e exemplos de payload
+- [ ] suíte verde, `npm test` sem Docker
+- [ ] repositório público e vídeo de 2 a 5 minutos
+
+## Estado da execução, 21 de setembro de 2026
+
+Fases 11 a 16 concluídas. A suíte foi de 69 para 107 casos, o `tsc --strict`
+passa e a cobertura segue em 100%, agora com 342 linhas.
+
+A ordem real foi diferente da planejada, e por escolha. Em vez de fase por fase,
+escrevi de uma vez os testes das cinco frentes, rodei e vi 39 falharem em 8
+arquivos, e só então implementei até o verde. Funcionou porque as frentes se
+cruzam: o prefixo `/api` aparece em todo teste de rota, e `imageUrl` aparece em
+factory, seed, presenter e repositório. Separar em fases teria feito o mesmo
+arquivo ser reescrito quatro vezes.
+
+Dois ajustes durante a implementação. O primeiro: o ramo que recusava número não
+finito no schema de preço ficou inalcançável, porque `z.number()` do Zod 4 já
+recusa `NaN` e infinito, e a cobertura apontou as duas linhas mortas; o ramo
+saiu. O segundo: a mensagem de campo vazio saía como `imageUrl deve ter no
+minimo 1 caracteres`, então o gerador de mensagem passou a tratar o mínimo de um
+caractere como caso próprio.
+
+A migration `20260921133922_add_image_url` foi criada com `--create-only`,
+editada à mão para o padrão temporário e aplicada com `migrate deploy` no
+container que já estava no ar, sem reset e sem perder registro. O seed repovoou
+com as seis imagens.
+
+O smoke manual contra o Postgres, na porta 3333, confirmou 201 com `Location`
+apontando para `/api/products/:id`, `PUT` parcial preservando os campos
+ausentes, 400 no preço negativo, 404 no id inexistente, 204 na remoção, 404 na
+repetição dela, e o preflight devolvendo `Access-Control-Allow-Origin` apenas
+para a 5173.
+
+Falta a entrega: commit, repositório atualizado e o vídeo de 2 a 5 minutos.
+Roteiro sugerido para esta parte: o schema do Zod e um `POST` inválido mostrando
+os quatro campos acusados de uma vez em 40 segundos, o `PUT` parcial em 30, o
+preflight no Insomnia com as duas origens em 30, `docker ps` e Prisma Studio com
+a coluna de imagem em 40, e `npm test` verde no fim.

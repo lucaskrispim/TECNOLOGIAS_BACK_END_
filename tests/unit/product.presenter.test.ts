@@ -7,6 +7,7 @@ const base = {
   id: 7,
   title: 'Teclado',
   description: 'Switch marrom',
+  imageUrl: 'https://cdn.exemplo.com/produtos/teclado.jpg',
   createdAt: new Date('2026-01-10T12:00:00.000Z'),
   updatedAt: new Date('2026-01-11T12:00:00.000Z'),
 }
@@ -34,12 +35,18 @@ describe('toApi', () => {
     expect(dto.updatedAt).toBe('2026-01-11T12:00:00.000Z')
   })
 
+  it('repassa a imagem sem alterar', () => {
+    const dto = toApi({ ...base, price: new Prisma.Decimal('1.00') })
+    expect(dto.imageUrl).toBe('https://cdn.exemplo.com/produtos/teclado.jpg')
+  })
+
   it('expoe exatamente os campos do contrato', () => {
     const dto = toApi({ ...base, price: new Prisma.Decimal('1.00') })
     expect(Object.keys(dto).sort()).toEqual([
       'createdAt',
       'description',
       'id',
+      'imageUrl',
       'price',
       'title',
       'updatedAt',

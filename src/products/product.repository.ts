@@ -1,12 +1,13 @@
 import type { Product } from '../generated/pg'
 import type { Db } from '../db/client'
-import type { ProductInput } from './product.validation'
+import type { ProductCreateInput, ProductUpdateInput } from './product.schema'
 
 export interface ProductRepository {
-  create(input: ProductInput): Promise<Product>
+  create(input: ProductCreateInput): Promise<Product>
   findAll(): Promise<Product[]>
   findById(id: number): Promise<Product | null>
-  update(id: number, input: ProductInput): Promise<Product | null>
+  /** Atualizacao parcial: coluna ausente do patch fica como esta. */
+  update(id: number, patch: ProductUpdateInput): Promise<Product | null>
   remove(id: number): Promise<boolean>
 }
 
@@ -24,9 +25,9 @@ export function createProductRepository(db: Db): ProductRepository {
 
     findById: (id) => db.product.findUnique({ where: { id } }),
 
-    async update(id, input) {
+    async update(id, patch) {
       try {
-        return await db.product.update({ where: { id }, data: input })
+        return await db.product.update({ where: { id }, data: patch })
       } catch (erro) {
         if (naoEncontrado(erro)) return null
         throw erro

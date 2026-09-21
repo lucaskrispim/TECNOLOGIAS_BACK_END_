@@ -1,13 +1,13 @@
 import type { Product } from '../generated/pg'
 import { NotFoundError } from '../http/errors'
 import type { ProductRepository } from './product.repository'
-import type { ProductInput } from './product.validation'
+import type { ProductCreateInput, ProductUpdateInput } from './product.schema'
 
 export interface ProductService {
   list(): Promise<Product[]>
   get(id: number): Promise<Product>
-  create(input: ProductInput): Promise<Product>
-  replace(id: number, input: ProductInput): Promise<Product>
+  create(input: ProductCreateInput): Promise<Product>
+  update(id: number, patch: ProductUpdateInput): Promise<Product>
   remove(id: number): Promise<void>
 }
 
@@ -25,8 +25,8 @@ export function createProductService(repo: ProductRepository): ProductService {
 
     create: (input) => repo.create(input),
 
-    async replace(id, input) {
-      const atualizado = await repo.update(id, input)
+    async update(id, patch) {
+      const atualizado = await repo.update(id, patch)
       if (atualizado === null) throw naoEncontrado(id)
       return atualizado
     },

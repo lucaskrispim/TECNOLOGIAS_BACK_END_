@@ -1,8 +1,8 @@
 {
   "_type": "export",
   "__export_format": 4,
-  "__export_date": "2026-09-04T14:30:00.000Z",
-  "__export_source": "insomnia.desktop.app:v13.2.0:tarefa1-back-end",
+  "__export_date": "2026-09-21T14:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v13.2.0:tarefa2-back-end",
   "resources": [
     {
       "_id": "wrk_catalogo_local",
@@ -11,7 +11,7 @@
       "modified": 1767225600000,
       "created": 1767225600000,
       "name": "Catalogo API, URLs fixas na 3333",
-      "description": "Mesmas requisicoes do outro workspace, com a URL escrita em cada uma em vez de variavel de ambiente.",
+      "description": "CRUD da API de catalogo, tarefa 2. Cada requisicao traz na descricao o status esperado. Ordem sugerida de uso: liste, crie com o POST, aponte id_valido e id_removivel para ids reais e siga para PUT e DELETE.",
       "scope": "collection"
     },
     {
@@ -21,7 +21,7 @@
       "modified": 1767225600000,
       "created": 1767225600000,
       "name": "GET / status da API",
-      "description": "Deve responder 200 com {\"status\":\"ok\"}.",
+      "description": "200. Responde {\"status\":\"ok\"}, sem tocar no banco.",
       "method": "GET",
       "url": "http://localhost:3333/",
       "body": {},
@@ -43,10 +43,10 @@
       "parentId": "wrk_catalogo_local",
       "modified": 1767225600000,
       "created": 1767225600000,
-      "name": "GET /products lista",
-      "description": "Deve responder 200 com os seis produtos do seed.",
+      "name": "GET /api/products lista",
+      "description": "200. Lista os produtos do seed, do mais recente para o mais antigo.",
       "method": "GET",
-      "url": "http://localhost:3333/products",
+      "url": "http://localhost:3333/api/products",
       "body": {},
       "parameters": [],
       "headers": [],
@@ -61,15 +61,15 @@
       "settingFollowRedirects": "global"
     },
     {
-      "_id": "req_l_show",
+      "_id": "req_l_show_ok",
       "_type": "request",
       "parentId": "wrk_catalogo_local",
       "modified": 1767225600000,
       "created": 1767225600000,
-      "name": "GET /products/1 existente",
-      "description": "Deve responder 200 com o produto de id 1.",
+      "name": "GET /api/products/:id existente",
+      "description": "200. Use em id_valido um id que apareca na listagem.",
       "method": "GET",
-      "url": "http://localhost:3333/products/1",
+      "url": "http://localhost:3333/api/products/1",
       "body": {},
       "parameters": [],
       "headers": [],
@@ -84,15 +84,15 @@
       "settingFollowRedirects": "global"
     },
     {
-      "_id": "req_l_404",
+      "_id": "req_l_show_404",
       "_type": "request",
       "parentId": "wrk_catalogo_local",
       "modified": 1767225600000,
       "created": 1767225600000,
-      "name": "GET /products/999999 inexistente",
-      "description": "Deve responder 404 com {\"error\":\"not_found\"}.",
+      "name": "GET /api/products/:id inexistente",
+      "description": "404. Corpo {\"error\":\"not_found\", ...}.",
       "method": "GET",
-      "url": "http://localhost:3333/products/999999",
+      "url": "http://localhost:3333/api/products/999999",
       "body": {},
       "parameters": [],
       "headers": [],
@@ -107,15 +107,15 @@
       "settingFollowRedirects": "global"
     },
     {
-      "_id": "req_l_400",
+      "_id": "req_l_show_400",
       "_type": "request",
       "parentId": "wrk_catalogo_local",
       "modified": 1767225600000,
       "created": 1767225600000,
-      "name": "GET /products/abc fora do formato",
-      "description": "Deve responder 400 com {\"error\":\"bad_request\"}, e nao 404 nem 500.",
+      "name": "GET /api/products/:id fora do formato",
+      "description": "400. Id que nao e inteiro positivo e entrada invalida, nao recurso ausente.",
       "method": "GET",
-      "url": "http://localhost:3333/products/abc",
+      "url": "http://localhost:3333/api/products/abc",
       "body": {},
       "parameters": [],
       "headers": [],
@@ -130,18 +130,18 @@
       "settingFollowRedirects": "global"
     },
     {
-      "_id": "req_l_store",
+      "_id": "req_l_store_ok",
       "_type": "request",
       "parentId": "wrk_catalogo_local",
       "modified": 1767225600000,
       "created": 1767225600000,
-      "name": "POST /products cria",
-      "description": "Deve responder 201 com o produto criado e o cabecalho Location.",
+      "name": "POST /api/products cria",
+      "description": "201. Devolve o registro criado e o cabecalho Location com a URL dele.",
       "method": "POST",
-      "url": "http://localhost:3333/products",
+      "url": "http://localhost:3333/api/products",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"title\": \"Webcam Full HD 1080p\",\n  \"description\": \"Webcam com foco automatico, microfone estereo e conexao USB-A.\",\n  \"price\": \"319.90\"\n}"
+        "text": "{\n  \"title\": \"Webcam Full HD 1080p\",\n  \"description\": \"Webcam com microfone embutido, foco automatico e clipe para monitor.\",\n  \"price\": \"259.90\",\n  \"imageUrl\": \"https://picsum.photos/seed/webcam/640/480\"\n}"
       },
       "parameters": [],
       "headers": [
@@ -166,13 +166,13 @@
       "parentId": "wrk_catalogo_local",
       "modified": 1767225600000,
       "created": 1767225600000,
-      "name": "POST /products corpo invalido",
-      "description": "Deve responder 400 com a lista de campos invalidos em details.",
+      "name": "POST /api/products corpo invalido",
+      "description": "400. O Zod acusa os quatro campos de uma vez em details: title abaixo de 3, description abaixo de 10, imageUrl vazio e price negativo.",
       "method": "POST",
-      "url": "http://localhost:3333/products",
+      "url": "http://localhost:3333/api/products",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"title\": \"\",\n  \"price\": \"abc\"\n}"
+        "text": "{\n  \"title\": \"ab\",\n  \"description\": \"curta\",\n  \"price\": -5,\n  \"imageUrl\": \"\"\n}"
       },
       "parameters": [],
       "headers": [
@@ -192,18 +192,18 @@
       "settingFollowRedirects": "global"
     },
     {
-      "_id": "req_l_update",
+      "_id": "req_l_update_parcial",
       "_type": "request",
       "parentId": "wrk_catalogo_local",
       "modified": 1767225600000,
       "created": 1767225600000,
-      "name": "PUT /products/1 atualiza",
-      "description": "Deve responder 200 com o produto atualizado.",
+      "name": "PUT /api/products/:id parcial",
+      "description": "200. Manda so o preco; titulo, descricao e imagem ficam como estao.",
       "method": "PUT",
-      "url": "http://localhost:3333/products/1",
+      "url": "http://localhost:3333/api/products/1",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"title\": \"Teclado mecanico ABNT2 tenkeyless\",\n  \"description\": \"Descricao atualizada pelo PUT.\",\n  \"price\": \"379.90\"\n}"
+        "text": "{\n  \"price\": \"199.90\"\n}"
       },
       "parameters": [],
       "headers": [
@@ -223,20 +223,204 @@
       "settingFollowRedirects": "global"
     },
     {
-      "_id": "req_l_destroy",
+      "_id": "req_l_update_completo",
       "_type": "request",
       "parentId": "wrk_catalogo_local",
       "modified": 1767225600000,
       "created": 1767225600000,
-      "name": "DELETE /products/999999 inexistente",
-      "description": "Com um id que exista devolve 204 sem corpo. Repetindo, devolve 404.",
+      "name": "PUT /api/products/:id completo",
+      "description": "200. O mesmo schema em versao parcial tambem aceita o payload inteiro.",
+      "method": "PUT",
+      "url": "http://localhost:3333/api/products/1",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Webcam Full HD 1080p\",\n  \"description\": \"Webcam com microfone embutido, foco automatico e clipe para monitor.\",\n  \"price\": \"259.90\",\n  \"imageUrl\": \"https://picsum.photos/seed/webcam/640/480\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -200,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_l_update_400",
+      "_type": "request",
+      "parentId": "wrk_catalogo_local",
+      "modified": 1767225600000,
+      "created": 1767225600000,
+      "name": "PUT /api/products/:id preco negativo",
+      "description": "400. Nada e gravado: a validacao roda antes do acesso ao banco.",
+      "method": "PUT",
+      "url": "http://localhost:3333/api/products/1",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"price\": -10\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -100,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_l_update_404",
+      "_type": "request",
+      "parentId": "wrk_catalogo_local",
+      "modified": 1767225600000,
+      "created": 1767225600000,
+      "name": "PUT /api/products/:id inexistente",
+      "description": "404. E o P2025 do Prisma traduzido pela camada de dados.",
+      "method": "PUT",
+      "url": "http://localhost:3333/api/products/999999",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Produto que nao existe\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 0,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_l_destroy_ok",
+      "_type": "request",
+      "parentId": "wrk_catalogo_local",
+      "modified": 1767225600000,
+      "created": 1767225600000,
+      "name": "DELETE /api/products/:id remove",
+      "description": "204. Sem corpo na resposta. Aponte id_removivel para um registro descartavel, por exemplo o criado pelo POST.",
       "method": "DELETE",
-      "url": "http://localhost:3333/products/999999",
+      "url": "http://localhost:3333/api/products/1",
       "body": {},
       "parameters": [],
       "headers": [],
       "authentication": {},
-      "metaSortKey": -200,
+      "metaSortKey": 100,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_l_destroy_404",
+      "_type": "request",
+      "parentId": "wrk_catalogo_local",
+      "modified": 1767225600000,
+      "created": 1767225600000,
+      "name": "DELETE /api/products/:id inexistente",
+      "description": "404. Repetir a remocao do mesmo id cai aqui.",
+      "method": "DELETE",
+      "url": "http://localhost:3333/api/products/999999",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": 200,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_l_preflight_ok",
+      "_type": "request",
+      "parentId": "wrk_catalogo_local",
+      "modified": 1767225600000,
+      "created": 1767225600000,
+      "name": "OPTIONS /api/products preflight liberado",
+      "description": "204 com Access-Control-Allow-Origin: http://localhost:5173. E a pergunta que o navegador faz antes de um PUT vindo do front.",
+      "method": "OPTIONS",
+      "url": "http://localhost:3333/api/products/1",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Origin",
+          "value": "http://localhost:5173"
+        },
+        {
+          "name": "Access-Control-Request-Method",
+          "value": "PUT"
+        },
+        {
+          "name": "Access-Control-Request-Headers",
+          "value": "content-type"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 300,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_l_preflight_bloqueado",
+      "_type": "request",
+      "parentId": "wrk_catalogo_local",
+      "modified": 1767225600000,
+      "created": 1767225600000,
+      "name": "OPTIONS /api/products preflight de origem estranha",
+      "description": "404 e, o que importa, sem o cabecalho Access-Control-Allow-Origin: o navegador barra a leitura da resposta.",
+      "method": "OPTIONS",
+      "url": "http://localhost:3333/api/products/1",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Origin",
+          "value": "http://evil.example.com"
+        },
+        {
+          "name": "Access-Control-Request-Method",
+          "value": "PUT"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 400,
       "isPrivate": false,
       "settingStoreCookies": true,
       "settingSendCookies": true,
