@@ -1,6 +1,6 @@
 # Catalogo de produtos, API em Node, TypeScript, Express e Prisma
 
-Tarefas 1 e 2 da disciplina de Tecnologias Back-End. API REST que persiste um
+Tarefas 1, 2 e 3 da disciplina de Tecnologias Back-End. API REST que persiste um
 catalogo de produtos em PostgreSQL 15 rodando em container, com Prisma para
 modelagem, migration e seed.
 
@@ -8,8 +8,12 @@ A tarefa 2 acrescentou o CRUD completo sob o prefixo `/api`, validacao de
 runtime com Zod, CORS restrito ao front de desenvolvimento e o campo `imageUrl`
 no modelo.
 
+A tarefa 3 acrescentou registro e login de usuarios, com senha guardada como
+hash bcrypt e autenticacao por JWT. Um middleware protege a escrita em
+`/api/products` (`POST`, `PUT` e `DELETE`), e a leitura continua publica.
+
 O projeto foi escrito com teste primeiro: cada rota nasceu de um teste que
-falhava antes de existir implementacao. A suite tem 107 casos e roda em SQLite,
+falhava antes de existir implementacao. A suite tem 248 casos e roda em SQLite,
 sem depender de Docker, o que deixa `npm test` funcionar em qualquer maquina.
 
 ## Requisitos
@@ -31,9 +35,11 @@ nvm use                  # ou garanta Node 20+ no PATH
 npm install              # gera os clients do Prisma no postinstall
 
 cp .env.example .env     # ajuste usuario, senha e portas se quiser
+# troque o JWT_SECRET do .env por um valor proprio:
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 
 docker compose up -d     # sobe o PostgreSQL 15 (ou docker-compose up -d)
-npm run prisma:migrate   # cria a tabela products
+npm run prisma:migrate   # cria as tabelas products e users
 npm run seed             # grava os seis produtos iniciais
 
 npm run dev              # API em http://localhost:3000
@@ -52,25 +58,33 @@ em http://localhost:5555.
 
 ## Endpoints
 
-| Metodo | Rota | Resposta |
-| --- | --- | --- |
-| GET | `/` | 200 com `{"status":"ok"}` |
-| GET | `/api/products` | 200 com a lista, do mais recente para o mais antigo |
-| GET | `/api/products/:id` | 200 com o produto, 404 se nao existir, 400 se o id nao for inteiro positivo |
-| POST | `/api/products` | 201 com o produto criado e cabecalho `Location`, 400 se o corpo for invalido |
-| PUT | `/api/products/:id` | 200 com o produto atualizado, 404 se nao existir, 400 se o corpo for invalido |
-| DELETE | `/api/products/:id` | 204 sem corpo, 404 se nao existir |
+| Metodo | Rota | Token | Resposta |
+| --- | --- | --- | --- |
+| GET | `/` | nao | 200 com `{"status":"ok"}` |
+| POST | `/api/auth/register` | nao | 201 com `user` e `token`, 400 se o corpo for invalido, 409 se o e-mail ja existir |
+| POST | `/api/auth/login` | nao | 200 com `user` e `token`, 400 se o corpo for invalido, 401 se e-mail ou senha nao conferirem |
+| GET | `/api/auth/me` | sim | 200 com `{ "user": ... }`, 401 sem token ou com token invalido |
+| GET | `/api/products` | nao | 200 com a lista, do mais recente para o mais antigo |
+| GET | `/api/products/:id` | nao | 200 com o produto, 404 se nao existir, 400 se o id nao for inteiro positivo |
+| POST | `/api/products` | sim | 201 com o produto criado e cabecalho `Location`, 400 se o corpo for invalido |
+| PUT | `/api/products/:id` | sim | 200 com o produto atualizado, 404 se nao existir, 400 se o corpo for invalido |
+| DELETE | `/api/products/:id` | sim | 204 sem corpo, 404 se nao existir |
+
+Nas rotas marcadas com token, a requisicao precisa do cabecalho
+`Authorization: Bearer <token>`. Sem ele, ou com token invalido ou expirado, a
+resposta e 401 antes de qualquer validacao de corpo ou de id.
 
 O `PUT` e parcial: manda so o que muda. O corpo passa pelo schema de criacao em
 versao `.partial()`, entao enviar o objeto inteiro tambem funciona. Corpo sem
 nenhum campo conhecido responde 400, porque atualizacao que nao altera nada e
 pedido malformado.
 
-Exemplo de criacao:
+Exemplo de criacao, com o token obtido no login (veja a secao seguinte):
 
 ```bash
 curl -X POST http://localhost:3000/api/products \
   -H 'content-type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{
     "title": "Webcam Full HD 1080p",
     "description": "Webcam com foco automatico e microfone estereo.",
@@ -98,6 +112,7 @@ Atualizacao de um campo so:
 ```bash
 curl -X PUT http://localhost:3000/api/products/7 \
   -H 'content-type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{ "price": "289.90" }'
 ```
 
@@ -105,6 +120,124 @@ O preco vai e volta como string. Numero de ponto flutuante em JSON perderia
 centavo, e a coluna no banco e `numeric(10,2)`. O campo aceita string ou numero
 na entrada, sempre com no maximo duas casas decimais, e sai normalizado com
 duas casas.
+
+## Autenticacao
+
+### Passo a passo
+
+1. Cadastre um usuario em `POST /api/auth/register`. A resposta ja traz um
+   token, entao nao e preciso fazer login logo em seguida.
+2. Em outra sessao, obtenha um token novo em `POST /api/auth/login`.
+3. Envie o token no cabecalho `Authorization: Bearer <token>` em
+   `GET /api/auth/me` e nas escritas de `/api/products`.
+4. Quando o token expirar (7 dias por padrao), a API responde 401 com a mensagem
+   `token expirado`, e basta fazer login de novo.
+
+### Payloads
+
+Registro:
+
+```bash
+curl -X POST http://localhost:3000/api/auth/register \
+  -H 'content-type: application/json' \
+  -d '{ "name": "Maria Souza", "email": "maria@exemplo.com", "password": "senha-forte-123" }'
+```
+
+```json
+{
+  "user": {
+    "id": 1,
+    "name": "Maria Souza",
+    "email": "maria@exemplo.com",
+    "createdAt": "2026-10-09T13:52:23.164Z",
+    "updatedAt": "2026-10-09T13:52:23.164Z"
+  },
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTE1N..."
+}
+```
+
+Login, com a mesma forma de resposta do registro e status 200:
+
+```bash
+curl -X POST http://localhost:3000/api/auth/login \
+  -H 'content-type: application/json' \
+  -d '{ "email": "maria@exemplo.com", "password": "senha-forte-123" }'
+```
+
+Para guardar o token no shell e usar nos exemplos de produto:
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/login \
+  -H 'content-type: application/json' \
+  -d '{ "email": "maria@exemplo.com", "password": "senha-forte-123" }' \
+  | node -pe 'JSON.parse(require("fs").readFileSync(0)).token')
+```
+
+Usuario autenticado:
+
+```bash
+curl http://localhost:3000/api/auth/me -H "Authorization: Bearer $TOKEN"
+```
+
+```json
+{
+  "user": {
+    "id": 1,
+    "name": "Maria Souza",
+    "email": "maria@exemplo.com",
+    "createdAt": "2026-10-09T13:52:23.164Z",
+    "updatedAt": "2026-10-09T13:52:23.164Z"
+  }
+}
+```
+
+Sem token, ou com token invalido:
+
+```json
+{ "error": "unauthorized", "message": "token ausente: envie Authorization: Bearer <token>" }
+```
+
+Credencial errada no login, com a mesma resposta para e-mail inexistente e para
+senha errada:
+
+```json
+{ "error": "unauthorized", "message": "email ou senha invalidos" }
+```
+
+### Modelo de usuario
+
+| Coluna | Tipo | Observacao |
+| --- | --- | --- |
+| `id` | `serial` | chave primaria |
+| `name` | `varchar(120)` | |
+| `email` | `varchar(254)`, unico | gravado aparado e em minusculas |
+| `passwordHash` | `varchar(60)` | hash bcrypt; a senha nunca e gravada |
+| `createdAt`, `updatedAt` | `timestamp(3)` | |
+
+### Decisoes de seguranca
+
+A senha vira hash com bcrypt, custo 10 por padrao (`BCRYPT_ROUNDS`), e nem a
+senha nem o hash aparecem em resposta alguma: o presenter de usuario lista os
+campos de saida um a um.
+
+O token e um JWT HS256 assinado com `JWT_SECRET`, com o id do usuario em `sub`
+e expiracao em `JWT_EXPIRES_IN`. O algoritmo e fixo tambem na verificacao, o
+que barra token com `alg: none` ou assinado com outro algoritmo. A API se
+recusa a subir sem `JWT_SECRET` ou com segredo de menos de 32 caracteres.
+
+O login responde igual para e-mail inexistente e senha errada, e roda o bcrypt
+nos dois casos, para que nem a mensagem nem o tempo de resposta revelem quais
+e-mails tem conta.
+
+O e-mail e normalizado antes de gravar e de buscar, entao `Maria@Exemplo.com` e
+`maria@exemplo.com` sao a mesma conta. A unicidade e garantida pelo indice do
+banco, e nao por uma consulta previa, para que dois cadastros simultaneos nao
+passem os dois.
+
+O middleware `requireAuth` nao consulta o banco: confere assinatura e validade
+do token e guarda o id em `res.locals`. Por consequencia, o token de uma conta
+apagada continua aceito na escrita de produtos ate expirar, que e o preco do JWT
+sem estado. O `/api/auth/me`, que precisa do registro, responde 401 nesse caso.
 
 ## Validacao com Zod
 
@@ -120,6 +253,18 @@ em `src/products/product.schema.ts`:
 
 O schema de atualizacao e o mesmo em versao `.partial()`, entao as regras por
 campo valem igual no `PUT`.
+
+Registro e login tem schema proprio, em `src/auth/auth.schema.ts`:
+
+| Campo | Regra |
+| --- | --- |
+| `name` | texto de 2 a 120 caracteres, contados depois de aparar as pontas |
+| `email` | formato de e-mail valido, ate 254 caracteres, aparado e passado para minusculas |
+| `password` no registro | no minimo 6 caracteres e no maximo 72 bytes. Nao e aparada |
+| `password` no login | nao vazia e no maximo 72 bytes |
+
+O teto de 72 bytes vem do bcrypt, que ignora em silencio o que passar disso. A
+conta e em bytes, e nao em caracteres: uma letra acentuada ocupa dois.
 
 Tres coisas o Zod resolve aqui. Campo desconhecido no corpo e descartado, e nao
 chega ao `data` do Prisma. O erro traz todos os campos invalidos de uma vez, e
@@ -141,8 +286,8 @@ responder ao preflight sem custo. A politica:
 | --- | --- | --- |
 | origens | `ALLOWED_ORIGIN`, ou `http://localhost:5173` quando a variavel falta | lista fixa, conferida por igualdade. Nao existe curinga nem reflexo automatico da origem que chamou |
 | metodos | `GET`, `POST`, `PUT`, `DELETE`, `OPTIONS` | os verbos do CRUD, mais o preflight |
-| cabecalhos | `Content-Type` | a API so troca JSON, entao nao ha o que liberar alem disso |
-| credenciais | desligadas | a API nao usa cookie nem sessao |
+| cabecalhos | `Content-Type`, `Authorization` | a API troca JSON, e a escrita exige o token Bearer. Sem `Authorization` na lista, o navegador barraria o preflight do `POST` |
+| credenciais | desligadas | a API nao usa cookie nem sessao: o token vai no cabecalho |
 
 `ALLOWED_ORIGIN` aceita varias origens separadas por virgula, util quando o
 front tambem roda em outra porta ou ja tem endereco de producao.
@@ -173,13 +318,45 @@ lista de campos:
 | --- | --- | --- | --- |
 | corpo invalido | 400 | `validation_error` | `ZodError` |
 | id fora do formato, JSON malformado | 400 | `bad_request` | `parseId` e o parser do Express |
+| token ausente, invalido ou expirado, credencial errada | 401 | `unauthorized` | middleware `requireAuth` e login |
 | produto ou rota inexistente | 404 | `not_found` | `P2025` do Prisma, ou rota sem handler |
+| e-mail ja cadastrado | 409 | `conflict` | `P2002` do Prisma, o indice unico |
+| corpo acima de 100 kB | 413 | `payload_too_large` | parser do Express |
 | falha nao prevista | 500 | `internal_error` | qualquer outra excecao |
 
 O 500 devolve mensagem generica: stack e mensagem interna ficam no log do
-servidor, nunca no corpo da resposta.
+servidor, nunca no corpo da resposta. O 401 traz tambem o cabecalho
+`WWW-Authenticate: Bearer realm="api"`, que diz ao cliente qual esquema usar.
 
 ## Testes com o Insomnia
+
+### Autenticacao, tarefa 3
+
+O arquivo `insomnia/catalogo-auth.insomnia.json` traz dezoito requisicoes em
+tres pastas, cobrindo os cenarios que o enunciado pede:
+
+| Pasta | Requisicao | Esperado |
+| --- | --- | --- |
+| 1. Autenticacao | registro valido, e-mail repetido, corpo invalido | 201, 409, 400 |
+| 1. Autenticacao | login valido, senha errada, e-mail inexistente, corpo invalido | 200, 401, 401, 400 |
+| 2. Usuario autenticado | `/auth/me` sem token, com token invalido, com token | 401, 401, 200 |
+| 3. Products | `GET` publico | 200 |
+| 3. Products | `POST` sem token, com token invalido, com token | 401, 401, 201 |
+| 3. Products | `PUT` sem token, com token | 401, 200 |
+| 3. Products | `DELETE` sem token, com token | 401, 204 |
+
+O token nao precisa ser copiado a mao. A variavel `token` do ambiente le o
+campo `token` da resposta de `POST /api/auth/login valido`, e se essa
+requisicao ainda nao rodou o Insomnia a dispara sozinho. As variaveis `email` e
+`password` definem a conta usada no registro e no login. Rode o registro valido
+uma vez; depois disso ele passa a responder 409, que e o cenario seguinte da
+pasta. Aponte `id_valido` e `id_removivel` para o id devolvido pelo
+`POST /api/products com token`.
+
+Um teste automatizado, `tests/contract/insomnia.contract.test.ts`, confere que
+a colecao continua cobrindo cada um desses cenarios.
+
+### CRUD, tarefa 2
 
 O arquivo `insomnia/catalogo.insomnia.json` traz quinze requisicoes prontas,
 cobrindo o caminho feliz e os erros de cada rota. Cada uma registra na
@@ -205,19 +382,27 @@ Ha tambem `insomnia/catalogo-urls-fixas-3333.insomnia.json`, com as mesmas
 requisicoes e a URL escrita em cada uma, para o caso de a importacao das
 variaveis de ambiente falhar em alguma versao do Insomnia.
 
+Essas duas colecoes sao da tarefa 2, anteriores a autenticacao: os `POST`,
+`PUT` e `DELETE` delas agora respondem 401, porque nao enviam token. Para a
+escrita, use a colecao da tarefa 3.
+
 ## Testes automatizados
 
 ```bash
-npm test          # 107 casos, nao precisa de Docker
+npm test          # 248 casos, nao precisa de Docker
 npm run test:watch
 npm run typecheck
 ```
 
-A suite tem tres niveis. Os unitarios cobrem os schemas do Zod, a formatacao da
-resposta e o parsing de id, sem banco e sem HTTP. Os de integracao exercitam o
-repositorio e o seed contra um SQLite de verdade, o que pega erro de query e de
-mapeamento de tipo. Os de rota sobem o app com Supertest e verificam status,
-corpo e cabecalho no fluxo completo.
+| Pasta | Casos | O que verifica |
+| --- | --- | --- |
+| `tests/unit` | 113 | schemas, configuracao, bcrypt, JWT, middleware e service, sem banco e sem HTTP |
+| `tests/integration` | 24 | repositorios e seed contra SQLite de verdade, inclusive o indice unico de e-mail |
+| `tests/http` | 82 | cada rota com Supertest: status, corpo e cabecalho |
+| `tests/e2e` | 4 | a API num socket real, chamada por `fetch`, na jornada registro, perfil, escrita e login |
+| `tests/regression` | 7 | o que a tarefa 2 entregava e precisa continuar igual depois da autenticacao |
+| `tests/security` | 9 | senha fora das respostas, enumeracao de conta, atribuicao em massa, token forjado |
+| `tests/contract` | 9 | formato das respostas validado por schema, e cobertura da colecao do Insomnia |
 
 O `pretest` prepara o banco de teste sozinho, entao nao ha passo manual antes
 de rodar.
@@ -247,7 +432,7 @@ em [TESTES.md](TESTES.md).
 ```
 prisma/
   schema.prisma        modelo, provider postgresql, fonte da verdade
-  migrations/          migration init versionada
+  migrations/          migrations versionadas: init, imageUrl e users
   seed.ts              casca de linha de comando do seed
 scripts/
   gen-sqlite-schema.mjs  deriva o schema de teste do principal
@@ -255,18 +440,24 @@ src/
   app.ts               monta o Express, recebe as dependencias por parametro
   server.ts            unico lugar que chama listen
   db/client.ts         escolhe o client conforme DB_DRIVER
+  auth/                configuracao, bcrypt, JWT, middleware, schema, service, rotas
   http/                cors, erros, middleware de erro e parsing de parametro
   products/            rota, controller, service, repositorio, schema Zod, presenter, seed
+  users/               repositorio e presenter de usuario
 tests/
-  unit/                schema, presenter e parsing, sem banco
-  integration/         repositorio e seed contra SQLite
+  unit/                schema, presenter, parsing, token, senha e middleware, sem banco
+  integration/         repositorios e seed contra SQLite
   http/                rotas com Supertest
-  support/             app de teste, controle do banco e factories
+  e2e/                 API num socket real, chamada por fetch
+  regression/          comportamento anterior que precisa continuar igual
+  security/            vazamento de senha, enumeracao, token forjado
+  contract/            formato das respostas e cobertura do Insomnia
+  support/             app de teste, controle do banco, usuario autenticado e factories
 insomnia/              workspace exportado
 ```
 
-As dependencias entram por parametro: `createApp` recebe o service, e o
-repositorio recebe o client do Prisma. E isso que permite a suite apontar para
+As dependencias entram por parametro: `createApp` recebe os services e o
+servico de token, e cada repositorio recebe o client do Prisma. E isso que permite a suite apontar para
 SQLite e injetar um service que falha, para exercitar o caminho de erro, sem
 mexer em estado global.
 
@@ -296,7 +487,25 @@ numerica e devolve `349.9`, enquanto o Postgres devolve `349.90`. O presenter
 uniformiza com duas casas, e por isso a resposta da API e identica nos dois. A
 garantia de precisao de centavo, porem, so existe de fato no Postgres.
 
+## Roteiro da demonstracao
+
+1. `docker compose up -d`, `npm run prisma:migrate` e `npm run dev`.
+2. `npm run prisma:studio` e mostrar a tabela `users` vazia.
+3. No Insomnia, pasta 1: registro valido (201), e-mail repetido (409), corpo
+   invalido (400), login valido (200), senha errada (401).
+4. Voltar ao Prisma Studio e mostrar o usuario com `passwordHash` em bcrypt.
+5. Pasta 2: `/auth/me` sem token (401) e com token (200).
+6. Pasta 3: `POST`, `PUT` e `DELETE` sem token (401) e com token (201, 200, 204),
+   conferindo no Prisma Studio que o produto foi criado e removido.
+
 ## Problemas comuns
+
+**A API nao sobe e diz `JWT_SECRET nao definido`.** Falta a variavel no `.env`.
+Copie o bloco de autenticacao do `.env.example` e gere um segredo com o comando
+que esta no proprio arquivo.
+
+**O Insomnia devolve 401 numa escrita com token.** O token expirou ou o
+`JWT_SECRET` mudou desde o login. Rode de novo o login valido.
 
 **Porta 5432 ocupada.** Mude `POSTGRES_PORT` no `.env` para 55435, e ajuste a
 porta na `DATABASE_URL` para a mesma. O compose usa essa variavel no mapeamento.

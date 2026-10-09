@@ -1,7 +1,13 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express'
 import { ZodError } from 'zod'
 
-import { AppError, BadRequestError, NotFoundError, ValidationError } from './errors'
+import {
+  AppError,
+  BadRequestError,
+  NotFoundError,
+  PayloadTooLargeError,
+  ValidationError,
+} from './errors'
 
 /** Codigo do Prisma para operacao sobre registro que nao existe. */
 const REGISTRO_NAO_ENCONTRADO = 'P2025'
@@ -15,6 +21,8 @@ export const errorHandler: ErrorRequestHandler = (erro, _req, res, _next) => {
   const tratado = normalizar(erro)
 
   if (tratado instanceof AppError) {
+    // O 401 diz ao cliente qual esquema de autenticacao a API espera.
+    if (tratado.status === 401) res.set('WWW-Authenticate', 'Bearer realm="api"')
     res.status(tratado.status).json({
       error: tratado.code,
       message: tratado.message,
@@ -41,6 +49,7 @@ function normalizar(erro: unknown): unknown {
   if (erro instanceof ZodError) return new ValidationError(detalhesDoZod(erro))
   if (ehRegistroAusente(erro)) return new NotFoundError()
   if (ehJsonMalformado(erro)) return new BadRequestError('corpo da requisicao nao e JSON valido')
+  if (ehCorpoGrandeDemais(erro)) return new PayloadTooLargeError()
   return erro
 }
 
@@ -77,5 +86,15 @@ function ehJsonMalformado(erro: unknown): boolean {
     'status' in erro &&
     (erro as { status: unknown }).status === 400 &&
     'body' in erro
+  )
+}
+
+/** express.json recusa corpo acima do limite (100 kB) com erro de tipo proprio. */
+function ehCorpoGrandeDemais(erro: unknown): boolean {
+  return (
+    typeof erro === 'object' &&
+    erro !== null &&
+    'type' in erro &&
+    (erro as { type: unknown }).type === 'entity.too.large'
   )
 }

@@ -7,8 +7,11 @@ export const DEFAULT_ALLOWED_ORIGIN = 'http://localhost:5173'
 /** Verbos do CRUD, mais o OPTIONS que o navegador usa no preflight. */
 export const ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 
-/** A API so troca JSON, entao Content-Type basta na lista de cabecalhos. */
-export const ALLOWED_HEADERS = ['Content-Type']
+/**
+ * Content-Type porque a API troca JSON, e Authorization porque a escrita exige
+ * o token Bearer. Sem o segundo, o navegador barraria o preflight do POST.
+ */
+export const ALLOWED_HEADERS = ['Content-Type', 'Authorization']
 
 /**
  * Le ALLOWED_ORIGIN, que aceita uma origem ou varias separadas por virgula.

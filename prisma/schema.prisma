@@ -23,3 +23,18 @@ model Product {
 
   @@map("products")
 }
+
+// Conta que pode escrever no catalogo. O e-mail chega normalizado em
+// minusculas pelo Zod, entao o indice unico basta para barrar duplicata que
+// muda so a caixa. A senha nunca e gravada: so o hash do bcrypt, que tem 60
+// caracteres.
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(120)
+  email        String   @unique @db.VarChar(254)
+  passwordHash String   @db.VarChar(60)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}

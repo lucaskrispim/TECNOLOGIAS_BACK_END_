@@ -4,6 +4,7 @@ import { z } from 'zod'
 
 import { createApp } from '../../src/app'
 import type { ProductService } from '../../src/products/product.service'
+import { testDeps } from '../support/app'
 
 /** Service que estoura, para exercitar o caminho do erro nao previsto. */
 function servicoQueFalha(erro: unknown): ProductService {
@@ -28,7 +29,7 @@ afterEach(() => {
 describe('erro nao previsto', () => {
   it('vira 500 em JSON, sem stack e sem a mensagem interna no corpo', async () => {
     const log = semLog()
-    const app = createApp({ products: servicoQueFalha(new Error('senha do banco no texto')) })
+    const app = createApp(testDeps({ products: servicoQueFalha(new Error('senha do banco no texto')) }))
 
     const res = await request(app).get('/api/products')
 
@@ -50,7 +51,7 @@ describe('erro do Prisma que escapa da camada de dados', () => {
     const p2025 = Object.assign(new Error('An operation failed because it depends on...'), {
       code: 'P2025',
     })
-    const app = createApp({ products: servicoQueFalha(p2025) })
+    const app = createApp(testDeps({ products: servicoQueFalha(p2025) }))
 
     const res = await request(app).get('/api/products/1')
 
@@ -61,7 +62,7 @@ describe('erro do Prisma que escapa da camada de dados', () => {
   it('codigo diferente de P2025 continua sendo 500', async () => {
     const log = semLog()
     const p1001 = Object.assign(new Error('banco inalcancavel'), { code: 'P1001' })
-    const app = createApp({ products: servicoQueFalha(p1001) })
+    const app = createApp(testDeps({ products: servicoQueFalha(p1001) }))
 
     const res = await request(app).get('/api/products/1')
 
@@ -73,7 +74,7 @@ describe('erro do Prisma que escapa da camada de dados', () => {
 describe('ZodError que chega ao middleware', () => {
   it('vira 400 com a lista de campos, e nao 500', async () => {
     const erro = z.object({ title: z.string() }).safeParse({}).error
-    const app = createApp({ products: servicoQueFalha(erro) })
+    const app = createApp(testDeps({ products: servicoQueFalha(erro) }))
 
     const res = await request(app).get('/api/products')
 
@@ -85,7 +86,7 @@ describe('ZodError que chega ao middleware', () => {
 
 describe('corpo malformado', () => {
   it('JSON invalido vira 400, nao 500', async () => {
-    const app = createApp({ products: servicoQueFalha(new Error('nao deveria chegar aqui')) })
+    const app = createApp(testDeps({ products: servicoQueFalha(new Error('nao deveria chegar aqui')) }))
 
     const res = await request(app)
       .post('/api/products')
@@ -100,7 +101,7 @@ describe('corpo malformado', () => {
 describe('forma da resposta de erro', () => {
   it('e a mesma em 400, 404 e 500', async () => {
     const log = semLog()
-    const app = createApp({ products: servicoQueFalha(new Error('boom')) })
+    const app = createApp(testDeps({ products: servicoQueFalha(new Error('boom')) }))
 
     const respostas = [
       await request(app).get('/api/products/abc'),

@@ -15,6 +15,7 @@ export const testDb = client as unknown as Db
 
 export async function resetDb(): Promise<void> {
   await client.product.deleteMany()
+  await client.user.deleteMany()
 }
 
 export async function disconnectDb(): Promise<void> {

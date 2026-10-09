@@ -3,18 +3,14 @@ import request from 'supertest'
 
 import { createApp } from '../../src/app'
 import { DEFAULT_ALLOWED_ORIGIN, parseAllowedOrigins } from '../../src/http/cors'
-import { createProductRepository } from '../../src/products/product.repository'
-import { createProductService } from '../../src/products/product.service'
-import { disconnectDb, testDb } from '../support/db'
+import { testDeps } from '../support/app'
+import { disconnectDb } from '../support/db'
 
 const FRONT = 'http://localhost:5173'
 const OUTRA = 'http://evil.example.com'
 
 function appCom(allowedOrigins: string[]) {
-  return createApp({
-    products: createProductService(createProductRepository(testDb)),
-    allowedOrigins,
-  })
+  return createApp(testDeps({ allowedOrigins }))
 }
 
 afterAll(disconnectDb)

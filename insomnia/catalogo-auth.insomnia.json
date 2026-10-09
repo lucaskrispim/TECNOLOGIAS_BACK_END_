@@ -1,0 +1,622 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-10-09T12:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v10.0.0:tarefa3-back-end",
+  "resources": [
+    {
+      "_id": "wrk_catalogo_auth",
+      "_type": "workspace",
+      "parentId": null,
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "Catalogo API, tarefa 3 autenticacao",
+      "description": "Registro, login, /auth/me e escrita protegida em products. Cada requisicao traz na descricao o status esperado. Ordem sugerida: rode as pastas na ordem do numero. O token do ambiente vem sozinho da resposta do login valido.",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_catalogo_auth",
+      "_type": "environment",
+      "parentId": "wrk_catalogo_auth",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:3333",
+        "email": "aluno@exemplo.com",
+        "password": "senha-forte-123",
+        "token": "{% response 'body', 'req_auth_login_ok', 'b64::JC50b2tlbg==::46b', 'no-history', 60 %}",
+        "token_invalido": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.assinatura-invalida",
+        "id_valido": "1",
+        "id_removivel": "1"
+      },
+      "dataPropertyOrder": {
+        "&": [
+          "base_url",
+          "email",
+          "password",
+          "token",
+          "token_invalido",
+          "id_valido",
+          "id_removivel"
+        ]
+      },
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 1791547200000
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "parentId": "wrk_catalogo_auth",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "1. Autenticacao",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1000
+    },
+    {
+      "_id": "fld_me",
+      "_type": "request_group",
+      "parentId": "wrk_catalogo_auth",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "2. Usuario autenticado",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -900
+    },
+    {
+      "_id": "fld_products",
+      "_type": "request_group",
+      "parentId": "wrk_catalogo_auth",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "3. Products com e sem token",
+      "description": "",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -800
+    },
+    {
+      "_id": "req_auth_register_ok",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "POST /api/auth/register valido",
+      "description": "201. Devolve user e token. Rodar de novo com o mesmo e-mail da 409.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/register",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Aluno de Teste\",\n  \"email\": \"{{ _.email }}\",\n  \"password\": \"{{ _.password }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -990,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_auth_register_409",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "POST /api/auth/register e-mail repetido",
+      "description": "409 conflict. O e-mail ja foi cadastrado na requisicao anterior; a caixa nao importa.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/register",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Outro Aluno\",\n  \"email\": \"ALUNO@exemplo.com\",\n  \"password\": \"outra-senha\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -980,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_auth_register_400",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "POST /api/auth/register invalido",
+      "description": "400 validation_error. E-mail fora do formato e senha com 5 caracteres, abaixo do minimo de 6.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/register",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"A\",\n  \"email\": \"nao-e-email\",\n  \"password\": \"12345\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -970,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_auth_login_ok",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "POST /api/auth/login valido",
+      "description": "200. Devolve user e token. O ambiente le o token desta resposta.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/login",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"{{ _.email }}\",\n  \"password\": \"{{ _.password }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -960,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_auth_login_401",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "POST /api/auth/login senha errada",
+      "description": "401 unauthorized, com a mesma mensagem de e-mail inexistente.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/login",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"{{ _.email }}\",\n  \"password\": \"senha-errada\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -950,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_auth_login_401_email",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "POST /api/auth/login e-mail inexistente",
+      "description": "401 unauthorized, identico ao caso de senha errada.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/login",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"ninguem@exemplo.com\",\n  \"password\": \"qualquer\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -940,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_auth_login_400",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "POST /api/auth/login invalido",
+      "description": "400 validation_error. Sem senha e com e-mail fora do formato.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/login",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"nao-e-email\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -930,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_me_sem_token",
+      "_type": "request",
+      "parentId": "fld_me",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "GET /api/auth/me sem token",
+      "description": "401 unauthorized, com o cabecalho WWW-Authenticate: Bearer.",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/auth/me",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -920,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_me_token_invalido",
+      "_type": "request",
+      "parentId": "fld_me",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "GET /api/auth/me token invalido",
+      "description": "401 unauthorized. Assinatura que nao confere.",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/auth/me",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_invalido }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -910,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_me_ok",
+      "_type": "request",
+      "parentId": "fld_me",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "GET /api/auth/me com token",
+      "description": "200. Devolve { user } sem a senha nem o hash.",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/auth/me",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -900,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_p_index",
+      "_type": "request",
+      "parentId": "fld_products",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "GET /api/products publico",
+      "description": "200 sem token: a leitura continua publica.",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/products",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -890,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_p_store_sem",
+      "_type": "request",
+      "parentId": "fld_products",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "POST /api/products sem token",
+      "description": "401. Nada e gravado.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/products",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Webcam Full HD 1080p\",\n  \"description\": \"Webcam com microfone embutido, foco automatico e clipe para monitor.\",\n  \"price\": \"259.90\",\n  \"imageUrl\": \"https://picsum.photos/seed/webcam/640/480\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -880,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_p_store_invalido",
+      "_type": "request",
+      "parentId": "fld_products",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "POST /api/products token invalido",
+      "description": "401. Nada e gravado.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/products",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Webcam Full HD 1080p\",\n  \"description\": \"Webcam com microfone embutido, foco automatico e clipe para monitor.\",\n  \"price\": \"259.90\",\n  \"imageUrl\": \"https://picsum.photos/seed/webcam/640/480\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_invalido }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -870,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_p_store_ok",
+      "_type": "request",
+      "parentId": "fld_products",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "POST /api/products com token",
+      "description": "201. Use o id devolvido em id_valido e id_removivel.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/products",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Webcam Full HD 1080p\",\n  \"description\": \"Webcam com microfone embutido, foco automatico e clipe para monitor.\",\n  \"price\": \"259.90\",\n  \"imageUrl\": \"https://picsum.photos/seed/webcam/640/480\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -860,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_p_update_sem",
+      "_type": "request",
+      "parentId": "fld_products",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "PUT /api/products/:id sem token",
+      "description": "401. O registro nao muda.",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/products/{{ _.id_valido }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"price\": \"199.90\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -850,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_p_update_ok",
+      "_type": "request",
+      "parentId": "fld_products",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "PUT /api/products/:id com token",
+      "description": "200. Atualizacao parcial.",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/products/{{ _.id_valido }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"price\": \"199.90\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -840,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_p_destroy_sem",
+      "_type": "request",
+      "parentId": "fld_products",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "DELETE /api/products/:id sem token",
+      "description": "401. O registro continua no banco.",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/products/{{ _.id_removivel }}",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -830,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_p_destroy_ok",
+      "_type": "request",
+      "parentId": "fld_products",
+      "modified": 1791547200000,
+      "created": 1791547200000,
+      "name": "DELETE /api/products/:id com token",
+      "description": "204 sem corpo. Na segunda vez, 404.",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/products/{{ _.id_removivel }}",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token }}"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -820,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    }
+  ]
+}
